@@ -18,10 +18,10 @@ def main():
         userRoleDns = getRoleDns(conn,base=entry.entry_dn)
         userRoleAssociations = []
         roleMappings = []
-        roles = []
+        roles = set()
         for userRoleDn in userRoleDns:
             roleDN = userRoleDn.entry_dn
-            print()
+            # print()
             
             roleAssociationEntries = getRoleAssociation(conn,base=roleDN)
             roleAssociation = roleAssociationEntries[0]['attributes']['member'][0]
@@ -31,23 +31,25 @@ def main():
                 if (startDate > now) or (endDate < now):
                     print(f"skipping roleDn: {roleDN} with startDate {startDate} and endDate {endDate}")
                     continue
-            print()
-            print(f" roleAssociation {roleAssociation}, startDate {startDate}, endDate {endDate}")
+            # print()
+            # print(f" roleAssociation {roleAssociation}, startDate {startDate}, endDate {endDate}")
             roleMappingEntries = getRoleMapping(conn,base=roleAssociation) #[0]#['member']
             roleMapping = roleMappingEntries[0]['attributes']['member'][0] #.member
-            print(f" roleMapping {roleMapping}")
+            # print(f" roleMapping {roleMapping}")
             roleEntries = getRole(conn,base=roleMapping)
             role = roleEntries[0]['attributes']['cn'][0]
-            print(f" role {role}")
+            # print(f" role {role}")
             roleMappings.append(roleMapping)
             userRoleAssociations.append(roleAssociation)
-            roles.append(role)
+            roles.add(role)
             # exit = input("press any key to continue")
             # if not exit:
             #     break
         
     #  return the results 
-    print(f"ESAA user {userId} with uid {uid} has the following roleAssociations: \n{userRoleAssociations} \n and roleMappings: {roleMappings}\n and roles: {roles}")
+    print(f"ESAA user {userId} with uid {uid} has the following roles: ")
+    for r in roles:
+        print(f" - {r}")
     
 def connectToLdap(host,port,user,pw) -> Connection : 
     ldapServer = Server(host=host, port=port, get_info=ALL)
