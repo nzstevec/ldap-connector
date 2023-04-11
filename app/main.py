@@ -1,4 +1,4 @@
-from ldap3 import Server, Connection, ALL
+from ldap3 import Server, Connection, ALL, ALL_ATTRIBUTES, SUBTREE
 
 # a rest api to connect to ldap server and query for user details and groups details 
  
@@ -11,18 +11,21 @@ def main():
     conn = connectToLdap(host,port,user,pw)
     # print(conn)
     # get list of users
-    userEntries = getListOfUsers(conn,base='ou=Users2,o=dev')
+    # userId = input("enter userId : ")
+    userId = "nzqaTPE174"
+    userEntries = getUserEntries(conn,base='ou=Users2,o=dev',userId=userId)
     #  query for user details
-    # users = ['tertop1','testeqa1','web_appserver_secure']
     for entry in userEntries:
         # display uid if it exists only
-        print(f"dn: {entry.entry_dn}\n  - uid: {entry.uid if entry.uid else 'None'}") 
-        print(f"  - groupMembership: {entry.groupMembership if entry.groupMembership else 'None'}")
-        # getUserDetails(conn,username=name,base='ou=Users,o=dev')
-        #  query for groups details
-        # getGroupsDetails(conn,username=username,base='ou=Groups,o=dev')
-        # query roles details
-        # getRolesDetails(conn,username=username,base='ou=Roles,o=dev')
+        # print(f"dn: {entry.entry_dn}\n  - uid: {entry.uid if entry.uid else 'None'}") 
+        # print(f"  - groupMembership: {entry.groupMembership if entry.groupMembership else 'None'}")
+        userRoleDns = getRoleDns(conn,base=entry.entry_dn)
+        userRoles = []
+        for role in userRoleDns:
+            print(f"roleDn: {role['dn']}",end='')
+            userRole = getRole(conn,base=role['dn'])
+            print(f", role {userRole[0]['dn']}")
+            userRoles.append(userRole[0]['dn'])
         
     #  return the results 
     # displayResults()
@@ -39,23 +42,45 @@ def connectToLdap(host,port,user,pw) -> Connection :
     # print("------------------------------")
     return ldapConn
 
+def getUserEntries(conn,base,userId) -> list : 
+    #  query for user details
+    conn.search(search_base=base, 
+                # search_filter='(&(objectClass=Person)(groupMembership=*))', 
+                # search_filter='(&(objectclass=eqaUser)(uid={0}*))',
+                search_filter=f'(sia-userid={userId})',
+                search_scope=SUBTREE, attributes=ALL_ATTRIBUTES)
+    print(f"User search returned {len(conn.entries)} entries")
+    # print("User List")
+    # print(conn.entries)
+    return conn.entries
+
 def getListOfUsers(conn,base) -> list : 
     #  query for user details
     conn.search(search_base=base, 
-                search_filter='(&(objectClass=Person)(groupMembership=*))', 
+                # search_filter='(&(objectClass=Person)(groupMembership=*))', 
                 # search_filter='(&(objectclass=eqaUser)(uid={0}*))',
+                search_filter='(sia-userid=*)',
                 attributes=['groupMembership','uid','securityEquals'])
     print(f"User search returned {len(conn.entries)} entries")
     # print("User List")
     # print(conn.entries)
     return conn.entries
 
-def getUserDetails(conn,username,base) -> dict : 
+def getRoleDns(conn,base) -> dict : 
     #  query for user details
     conn.search(search_base=base, 
-                search_filter='(cn='+username+')', 
-                attributes=['cn','sn','givenName','fullName','ou','o'])
-    print("User Details")
+                search_filter='(objectClass=eqaContext2)', 
+                search_scope=SUBTREE, attributes=ALL_ATTRIBUTES)
+    # print("User Role Dns")
+    print(conn.response)
+    return conn.response
+
+def getRole(conn,base) -> dict : 
+    #  query for user details
+    conn.search(search_base=base, 
+                search_filter='(objectClass=eqaRoleAssociation2)', 
+                search_scope=SUBTREE, attributes=ALL_ATTRIBUTES)
+    # print("User Role")
     print(conn.response)
     return conn.response
 
