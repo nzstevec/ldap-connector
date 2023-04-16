@@ -1,0 +1,43 @@
+openapi: "3.0.2"
+info:
+  title: API Title
+  version: "1.0"
+servers:
+  - url: https://api.server.test/v1
+paths:
+  /roles:
+    get:
+      operationId: get-roles
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: user-id
+          required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RolesResponse'
+
+components:
+  schemas:
+    Role:
+      type: object
+      required:
+        - role-id
+        - role-description
+        - site
+      properties:
+        role-id:
+          type: string
+        role-description:
+          type: string
+        site:
+          type: string
+    RolesResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/Role'
